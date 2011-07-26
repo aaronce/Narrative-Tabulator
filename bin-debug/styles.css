@@ -1,0 +1,16 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+
+s|BorderContainer.baseContainer
+{
+	backgroundAlpha: 0.0;
+}
+
+s|SkinnableContainer
+{
+	backgroundColor: #808080;
+	borderVisible: false;
+}
+	

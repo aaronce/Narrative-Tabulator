@@ -1,8 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
-					   xmlns:s="library://ns.adobe.com/flex/spark" 
-					   xmlns:mx="library://ns.adobe.com/flex/mx">
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="800" height="600" backgroundColor="#3D3D3D">
+	
+	<fx:Style source="styles.css"/>
+	
+	<fx:Script>
+		<![CDATA[
+			import components.ClassPlan;				// custom class
+			import components.newPlanTitleInput;		// custom component
+			
+			import mx.controls.Alert;					// mx library
+			import mx.core.IFlexDisplayObject;			// mx library
+			import mx.managers.PopUpManager;			// mx library
+			
+			// should probably make a navigation menu class and init here...
+			
+			private function newPlan(event:MouseEvent):void
+			{
+				// create a popup box (newPlanTitleInput) inside the contentContainer to enter plan name into.
+				var pop:IFlexDisplayObject = PopUpManager.createPopUp(contentContainer, newPlanTitleInput, true);
+				PopUpManager.centerPopUp(pop);	// centres the pop up inside the container.
+			}
+			
+			private function openPlan(event:MouseEvent):void
+			{
+				Alert.show('open existing Plan...');
+			}
+			
+			private function exportPlan(event:MouseEvent):void
+			{
+				Alert.show('export Plan...');
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
+	
+	<s:BorderContainer id="baseContainer" left="10" right="10" top="10" bottom="10"
+					   borderVisible="false"
+					   horizontalCenter="0"
+					   verticalCenter="0"
+					   styleName="baseContainer">
+		
+		<s:SkinnableContainer id="navContainer" left="0" top="0" bottom="0" width="200"
+							  styleName="navContainer">
+			
+			<s:Button x="51" y="41" width="99" height="30" 
+					  label="New"
+					  click="newPlan(event)"/>
+			
+			<s:Button x="51" y="79" width="99" height="30" 
+					  label="Open"
+					  click="openPlan(event)"/>
+			<s:Button x="51" y="117" width="99" height="30" 
+					  label="Export"
+					  click="exportPlan(event)"/>
+		
+		</s:SkinnableContainer>
+		
+		<s:SkinnableContainer id="contentContainer" left="210" right="0" top="0" bottom="0"
+							  backgroundAlpha="0.0">
+		</s:SkinnableContainer>
+	
+	</s:BorderContainer>
+	
 </s:WindowedApplication>
