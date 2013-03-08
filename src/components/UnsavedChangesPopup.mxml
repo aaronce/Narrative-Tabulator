@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--- 
+	Unsaved changes popup file
+	creates an alerting popup to inform
+	user whether the plan has been saved
+-->
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="400" height="250" contentBackgroundAlpha="0.0">
+	
+	<fx:Script>
+		<![CDATA[
+			
+			/**
+			 * close plan
+			 * 
+			 * @param event MouseEvent
+			 */ 
+			private function closePlan(event:MouseEvent):void
+			{
+				// ignore unsaved changes, close popup box and close the plan.
+				close(true);
+			}
+			
+			/**
+			 * cancel close plan
+			 * 
+			 * @param event MouseEvent
+			 */ 
+			private function cancelClosePlan(event:MouseEvent):void
+			{
+				// cancel the plan close and destroy popup
+				close(false);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Panel x="0" y="0" width="100%" height="100%" fontSize="14" title="Close Plan">
+		<s:Label x="18" y="43" width="355"
+				 text="There are unsaved changes in your plan are you sure you want to close it?"/>
+		<s:Button x="70" y="147" width="100" height="30" 
+				  label="Close" 
+				  click="closePlan(event)"/>
+		<s:Button x="220" y="147" width="100" height="30" 
+				  label="Cancel" 
+				  click="cancelClosePlan(event)"/>
+	</s:Panel>
+	
+</s:SkinnablePopUpContainer>

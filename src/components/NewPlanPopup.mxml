@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--- 
+	New plan pop up file
+	pop up for user to enter plan name
+	and passes it through to NewClassplan to start creating new plan
+-->
 <s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
 		 xmlns:s="library://ns.adobe.com/flex/spark"
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
@@ -7,12 +12,22 @@
 	<fx:Script>
 		<![CDATA[
 			
+			/**
+			 * initialise plan and pass the planName
+			 * 
+			 * @param event MouseEvent
+			 */ 
 			private function initPlan(event:MouseEvent):void
 			{
 				// close popup box and pass through TextInput param
 				close(true, planName.text);
 			}
 			
+			/**
+			 * cancel plan creating
+			 * 
+			 * @param event MouseEvent
+			 */ 
 			private function cancelPlanCreation(event:MouseEvent):void
 			{
 				// cancel the plan creation and destroy popup
@@ -26,7 +41,7 @@
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
 	
-	<s:Panel x="7" y="6" width="383" height="234" fontSize="14" title="New Plan Name">
+	<s:Panel left="0" right="0" top="0" bottom="0" fontSize="14" title="New Plan Name">
 		<s:Label x="18" y="43" 
 				 text="Please input a name for your plan:"/>
 		<s:TextInput x="34" y="73" width="313"

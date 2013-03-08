@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--- 
+New Class Plan.
+This class is for creating new lesson plans.
+it has functions for saving, 
+and adding/removing/sorting items to in a plan.
+-->
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					  xmlns:s="library://ns.adobe.com/flex/spark"
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  width="100%" height="100%">
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import components.PlanItem;
+			import components.NewPlanItemDisplay;
+			import flash.filesystem.*;
+			import mx.collections.ArrayCollection;
+			import mx.collections.ListCollectionView;
+			import mx.controls.Alert;
+			import mx.core.Container;
+			import mx.core.UIComponent;
+			import mx.managers.PopUpManager;
+			import spark.components.WindowedApplication;
+			import spark.events.PopUpEvent;
+			
+			[Bindable]
+			/**
+			 * Storing Plan title
+			 */ 
+			protected var planTitle:String;
+			
+			/**
+			 * Storing whether plan has been saved.
+			 */ 
+			protected var unsavedChanges:Boolean = false;
+			
+			[Bindable]
+			/**
+			 * Array for storing items added to plan.
+			 */ 
+			private var planItemList:ArrayCollection = new ArrayCollection;
+			
+			/**
+			 * var used for storing chosen files for addition to plan.
+			 */ 
+			private var fileToInclude:File;
+			
+			/**
+			 * var for reference to users documents directory
+			 */ 
+			private var userDocDir:File = File.documentsDirectory;
+			
+			/**
+			 * var for reference to lesson plan directory
+			 */ 
+			private var planLibraryDir:File = userDocDir.resolvePath("Tabulator Lesson Plans");
+			
+
+			/**
+			 * This function sets a given list of plan items to a new array of plan items.
+			 * 
+			 * @param list the given array for setter method.
+			 */
+			public function setPlanItemList(list:ArrayCollection):void
+			{
+				planItemList = list;
+			}
+			
+
+			/**
+			 * This function sets a given string to var planTitle.
+			 * 
+			 * @param title the given string for setter method.
+			 */
+			public function setTitle(title:String):void
+			{
+				planTitle = title;
+			}
+			
+
+			/**
+			 * Initiates the add a new item to plan
+			 * 
+			 * @param event the mouse interaction to init this function.
+			 */
+			private function addItemToPlan(event:MouseEvent):void
+			{
+				var fileToInclude:File = new File; // init new file var
+				
+				try	{
+					fileToInclude.browseForOpen("Select File:")
+					fileToInclude.addEventListener(Event.SELECT, planItemAdd);
+				}
+				catch (error:Error) {
+					Alert.show("Failed:" + error.message);
+				}
+			}
+			
+
+			private function planItemAdd(event:Event):void
+			{
+				var item:PlanItem = new PlanItem(event.target.name, event.target.nativePath); // create new item object
+				
+				planItemList.addItem(item); // put the new object into array.
+				
+				unsavedChanges = true; // setting Plan to unsaved state.
+				
+				updatePlanListDisplay(); // update display to show added file.
+			}
+			
+			//
+			// this will list out the objects in the plan list global array and place
+			// a visual element for each object in the list.
+			//
+			public function updatePlanListDisplay():void
+			{				
+				var itemYCoordCounter:int = 0;
+				
+				if(itemList.numElements >= 1) {
+					itemList.removeAllElements();
+				}
+				
+				for (var i:int = 0; i < planItemList.length; i++) 
+				{
+					var itemDisplay:NewPlanItemDisplay = new NewPlanItemDisplay(); // create new Display instance.
+					itemDisplay.fileName = planItemList[i].itemName;
+					itemDisplay.y = itemYCoordCounter;
+					
+					if(i == 0){
+						itemDisplay.first = true;
+					}
+					
+					if(i == planItemList.length - 1){
+						itemDisplay.last = true;
+					}
+					
+					itemList.addElement(itemDisplay);
+					itemDisplay.removeButton.addEventListener(MouseEvent.CLICK, this.removeItemFromPlan);
+					
+					itemDisplay.sortCheck();
+					
+					if(itemDisplay.first == false){
+						itemDisplay.upButton.addEventListener(MouseEvent.CLICK, this.moveItemUpInPlan);
+					}
+					
+					if(itemDisplay.last == false){
+						itemDisplay.downButton.addEventListener(MouseEvent.CLICK, this.moveItemDownInPlan);	
+					}
+					
+					itemYCoordCounter += 30; // increase Y coords.
+				}
+			}
+			
+			//
+			//
+			//
+			private function moveItemUpInPlan(event:MouseEvent):void
+			{	
+				var itemIndex:int;
+				var itemObject:Object;
+				var currentTar:Object = event.currentTarget.document.fileName;
+				
+				// search through planItemList:Array for the plan item.
+				for each(var item:Object in planItemList)
+				{
+					if(item.itemName == currentTar){
+						itemIndex = planItemList.getItemIndex(item);
+						itemObject = item;
+					}
+				}
+				
+				planItemList.removeItemAt(itemIndex);	
+				planItemList.addItemAt(itemObject, itemIndex - 1);
+				
+				setUnsavedCheck(true);
+				
+				updatePlanListDisplay();
+			}
+			
+			//
+			//
+			//
+			private function moveItemDownInPlan(event:MouseEvent):void
+			{	
+				var itemIndex:int;
+				var itemObject:Object;
+				var currentTar:Object = event.currentTarget.document.fileName;
+				
+				// search through planItemList:Array for the plan item.
+				for each(var item:Object in planItemList)
+				{
+					if(item.itemName == currentTar){
+						itemIndex = planItemList.getItemIndex(item);
+						itemObject = item;
+					}
+				}
+				
+				planItemList.removeItemAt(itemIndex);	
+				planItemList.addItemAt(itemObject, itemIndex + 1);
+				
+				setUnsavedCheck(true);
+				
+				updatePlanListDisplay();
+			}
+			
+			//
+			//
+			//
+			private function removeItemFromPlan(event:MouseEvent):void
+			{				
+				var removeIndex:int;
+				var currentTar:Object = event.currentTarget.document.fileName;
+				
+				// search through planItemList:Array for the plan item, remove it.
+				for each(var item:Object in planItemList)
+				{
+					if(item.itemName == currentTar){
+						removeIndex = planItemList.getItemIndex(item);
+					}
+				}
+				
+				planItemList.removeItemAt(removeIndex);	
+				
+				setUnsavedCheck(true);
+				
+				updatePlanListDisplay();
+			}
+			
+			//
+			//
+			//
+			private function savePlanPreCheck(event:MouseEvent):void
+			{
+				// declarations 
+				var targetDir:File = planLibraryDir.resolvePath(planTitle + "_assets");
+				
+				// check to see if never saved before
+				if(planLibraryDir.resolvePath(planTitle + "_assets").exists){
+
+					// folder already exists.. therfore we need to overwrite. confirm with user then move on.
+					var pop:OverwritePlanPopup = new OverwritePlanPopup;
+					pop.open(planPanel, true);
+					PopUpManager.centerPopUp(pop);
+					pop.addEventListener('close', pop_savePlan_CloseHandler);
+				
+				} else {
+					savePlan(false);
+				}
+			}
+			
+			//
+			//
+			//
+			private function pop_savePlan_CloseHandler(event:PopUpEvent):void
+			{
+				if (event.commit == true) {
+					savePlan(true);
+				}
+			}
+			
+			//
+			//
+			//
+			private function savePlan(overwrite:Boolean):void
+			{
+
+				if(planLibraryDir.exists) {
+					
+					// save... create(and delete) resources..					
+					try {
+						// this deletes a lesson plan, if existing for overwrite.
+						if(planLibraryDir.resolvePath(planTitle + ".xml").exists) {
+							try{
+								planLibraryDir.resolvePath(planTitle + ".xml").moveToTrash();	
+							}
+							catch(error:Error) {	
+								Alert.show("Existing Plan could not be removed. Your plan was not saved correctly. " + error.message);
+								
+							}
+						}
+						
+						// this deletes the contents of a *_assets directory not matching the planList.
+						if(planLibraryDir.resolvePath(planTitle + "_assets").exists) {
+							try{
+								var existingPlanDir:File = planLibraryDir.resolvePath(planTitle + "_assets");
+								var planFileList:Array = existingPlanDir.getDirectoryListing();
+								
+								for(var i:uint = 0; i < planFileList.length; i++){
+									var flag:uint = 0; //delete flag, set to assume file does not belong in there.
+									
+									for each(var listItem:Object in planItemList){
+										if(planFileList[i].name == listItem.itemName){
+											flag = 1; //set flag if found
+										}
+									}
+									
+									if(flag == 0){ //if not found in list, then if exists, move the file to trash
+										var existingPlanFileForDeletion:File = planLibraryDir.resolvePath(planTitle + '_assets/' + planFileList[i].name);
+										if(existingPlanFileForDeletion.exists){
+											existingPlanFileForDeletion.moveToTrash();
+										}
+									}
+									
+								}
+							}
+							catch(error:Error) {	
+								Alert.show("Existing Plan Files could not be removed. Your plan was not saved correctly. " + error.message);
+								
+							}
+						} else {
+							// creates *_assets directory
+							var targetDir:File = planLibraryDir.resolvePath(planTitle + "_assets");
+							targetDir.createDirectory();						
+						}
+						
+						// creates xml plan file			
+						var planXMLFile:File = planLibraryDir.resolvePath(planTitle + ".xml");
+						var stream:FileStream = new FileStream();
+						stream.open(planXMLFile, FileMode.WRITE);
+						
+						var outputContent:String = '<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n';
+						outputContent += '<lessonPlan title="'+ planTitle + '\">\n';
+						
+						// save each file into assets dir from planItemList:ArrayCollection.
+						// iterate over each object in planItemList:ArrayCollection and copy asset to "_assets" folder
+						// also insert its existance into outputContent String.
+						for each(var item:Object in planItemList){
+							// resolve path for copying later.
+							var file:File = new File();
+							file.nativePath = item.itemPath;
+							
+							// new path for file copy
+							var newItemPath:File = planLibraryDir.resolvePath(planTitle + '_assets/' + item.itemName);
+							
+							// add entry to xml file.
+							outputContent += '<planItem>\n<fileName>' + item.itemName + '</fileName>\n</planItem>\n';
+							
+							// execute copy to *_assets.
+							if(!newItemPath.exists){
+								file.copyTo(newItemPath, overwrite);
+							}
+						}
+						
+						// write the content to file then close
+						outputContent += '</lessonPlan>';
+						stream.writeUTFBytes(outputContent);
+						stream.close();	
+						
+						setUnsavedCheck(false);
+						
+						Alert.show("Plan Saved!");
+					}
+					catch(error:Error) {	
+						Alert.show("The Plan creation process failed. Your plan was not saved correctly. " + error.message);	
+					}
+					
+				}
+				else {
+					Alert.show("Lesson Plan Folder is missing! Please restart the application.");
+				}
+			}
+
+			//
+			//
+			//
+			private function closePlan(event:MouseEvent):void
+			{
+				if(getUnsavedCheck() == true){
+					var pop:UnsavedChangesPopup = new UnsavedChangesPopup;
+					pop.open(planPanel, true);
+					PopUpManager.centerPopUp(pop);
+					
+					pop.addEventListener('close', pop_unsaved_CloseHandler);
+				} else {
+					this.removeAllElements();		
+				}
+			}
+			
+			//
+			//
+			//
+			private function pop_unsaved_CloseHandler(event:PopUpEvent):void
+			{
+				if (event.commit == true) {
+					// close the plan.
+					this.removeAllElements();
+				}
+			}
+			
+			//
+			// returns the unsaved status state as a boolean.
+			//
+			private function getUnsavedCheck():Boolean
+			{
+				return unsavedChanges;
+			}
+			
+			
+			//
+			// sets unsaved state with new param. Must be true or false.
+			//
+			private function setUnsavedCheck(newState:Boolean):void
+			{
+				unsavedChanges = newState;	
+			}
+			
+						
+		]]>
+	</fx:Script>
+	
+	<s:Panel id="planPanel" width="100%" height="100%" title="{planTitle}">
+		
+		<s:HGroup id="planButtonsContainer" 
+				  left="5" right="5" bottom="5" height="60"
+				  columnWidth="90" gap="11" horizontalAlign="right" 
+				  paddingBottom="12" paddingRight="20" 
+				  variableColumnWidth="false" verticalAlign="bottom">
+			
+			<s:Button id="addItem" 
+					  height="35" 
+					  label="Add" click="addItemToPlan(event)"/>
+			<s:Button id="saveButton" 
+					  height="35" 
+					  label="Save Plan" click="savePlanPreCheck(event)"/>
+			<s:Button height="35" 
+					  label="Close Plan" click="closePlan(event)"/>
+		
+		</s:HGroup>
+		
+		
+		<s:Scroller left="10" right="10" top="0" bottom="65">
+			<s:VGroup id="itemList">
+					<!-- Plan items to be generated here. -->
+			</s:VGroup>
+		</s:Scroller>
+		
+	</s:Panel>
+	
+</s:SkinnableContainer>

@@ -1,21 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--- 
+	Main Application file.
+	Contains Main aplication navigation and 
+	code to launch the 3 tiers of Application 
+	functionality and init onload checks.
+	New.
+	Open.
+	Export.
+-->
+
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
 					   xmlns:s="library://ns.adobe.com/flex/spark"
 					   xmlns:mx="library://ns.adobe.com/flex/mx"
-					   width="800" height="600" backgroundColor="#3D3D3D">
+					   width="800" height="600" backgroundColor="#3D3D3D"
+					   creationComplete="loadCheck()">
 	
 	<fx:Style source="styles.css"/>
 	
 	<fx:Script>
 		<![CDATA[
+			import components.ExportClassPlan;
+			import components.LoadChecker;
+			import components.NewClassPlan;
 			import components.NewPlanPopup;
-			
+			import components.OpenPlanDisplay;
 			import mx.controls.Alert;
-			import mx.managers.PopUpManager;		// required for popup
-			import spark.events.PopUpEvent;			// required for popup
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import spark.events.PopUpEvent;
 			
-			// should probably make a navigation menu class and init here...
 			
+			/**
+			 * init LoadChecker instance using <code>WindowedApplication OnComplete()</code>.
+			 * 
+			 * <p>creates a splash screen popup which checks file system for plan dir existence.</p> 
+			 */
+			private function loadCheck():void
+			{
+				var popLoadCheck:LoadChecker = new LoadChecker;
+				popLoadCheck.open(contentContainer, true);
+				PopUpManager.centerPopUp(popLoadCheck);
+			}
+			
+			
+			/**
+			 * init NewPlanPopup instance using button click event.
+			 * 
+			 * <p>creates a new popup in the contentContainer, requesting user input. then passes onto 
+			 * <code>pop_closeHandler</code></p>
+			 * 
+			 * @param event:MouseEvent passes Click event through from button.
+			 * 
+			 * @see pop_closeHandler 
+			 */
 			private function newPlan(event:MouseEvent):void
 			{
 				var pop:NewPlanPopup = new NewPlanPopup;
@@ -25,24 +62,58 @@
 				pop.addEventListener('close', pop_closeHandler);
 			}
 			
+			
+			/**
+			 * pop_closeHandler takes event data and sets a new element.
+			 * 
+			 * <p>accepts event data if <code>true</code>. then creates a new element of class
+			 * NewClassPlan in the <code>contentContainer</code>. 
+			 * if <code>false</code> it does not proceed</p>
+			 * 
+			 * @param event:PopUpEvent accepts popup event from newPlan function.
+			 * 
+			 * @see newPlan 
+			 */
 			private function pop_closeHandler(event:PopUpEvent):void
 			{
-				if (event.commit = false) {
-					return;
+				if (event.commit == true) {
+					var titleText:String = event.data as String; 
+					
+					var newPlan:NewClassPlan = new NewClassPlan;
+					contentContainer.addElement(newPlan);
+					newPlan.setTitle(titleText);
 				}
-				// init new plan and pass through text
-				var tvar:String = event.data as String; 
-				trace(tvar);
 			}
 			
+			
+			/**
+			 * openPlan sets a new element for opening plans.
+			 * 
+			 * <p>creates a new element of class OpenPlanDisplay in the <code>contentContainer</code>. 
+			 * 
+			 * @param event:MouseEvent passes Click event through from button.
+			 */
 			private function openPlan(event:MouseEvent):void
 			{
-				Alert.show('open existing Plan...');
+				
+				//Create new open class instance.
+				var openClassPlan:OpenPlanDisplay = new OpenPlanDisplay;
+				contentContainer.addElement(openClassPlan);
 			}
 			
+			
+			
+			/**
+			 * openPlan sets a new element for opening plans.
+			 * 
+			 * <p>creates a new element of class OpenPlanDisplay in the <code>contentContainer</code>. 
+			 * 
+			 * @param event:MouseEvent passes Click event through from button.
+			 */
 			private function exportPlan(event:MouseEvent):void
 			{
-				Alert.show('export Plan...');
+				var exportClassPlan:ExportClassPlan = new ExportClassPlan;
+				contentContainer.addElement(exportClassPlan);
 			}
 			
 		]]>
@@ -76,9 +147,8 @@
 		
 		</s:SkinnableContainer>
 		
-		<s:SkinnableContainer id="contentContainer" 
-							  left="210" right="0" top="0" bottom="0"
-							  backgroundAlpha="0.0">
+		<s:SkinnableContainer id="contentContainer" x="210" top="0" bottom="0" width="100%"
+							  backgroundAlpha="0.61">
 		</s:SkinnableContainer>
 	
 	</s:BorderContainer>

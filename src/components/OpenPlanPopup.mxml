@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--- 
+	Open Plan pop up file
+	Display items and execute items in plan
+-->
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+						   xmlns:s="library://ns.adobe.com/flex/spark"
+						   xmlns:mx="library://ns.adobe.com/flex/mx"
+						   width="600" height="400" contentBackgroundAlpha="0.0">
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import components.PlanItem;
+			import components.OpenPlanItemDisplay;
+			import mx.collections.ArrayCollection;
+			import mx.collections.ListCollectionView;
+			import spark.components.Label;
+			
+			[Bindable]
+			/**
+			 * The class plan title
+			 */ 
+			public var classPlanTitle:String;
+			
+			/**
+			 * Array storing items in plan
+			 */ 
+			public var itemInPlan:ArrayCollection = new ArrayCollection;
+			
+			/**
+			 * Plan library declarations
+			 */
+			private var userDocDir:File = File.documentsDirectory;
+			
+			/**
+			 * More specific plan declaration
+			 */
+			private var planLibraryDir:File = userDocDir.resolvePath("Tabulator Lesson Plans");
+			
+			/**
+			 * Set class plan title
+			 * 
+			 * @param planTitle String.
+			 */
+			public function setTitle(planTitle:String):void
+			{
+				classPlanTitle = planTitle;
+			}
+			
+			/**
+			 * Display item in plan,
+			 * put the items in array for later use
+			 * 
+			 * @param xmlFile XML
+			 * @param fileName String
+			 */
+			public function showItem(xmlFile:XML, fileName:String):void
+			{
+				var planAssetsDir:File = planLibraryDir.resolvePath(classPlanTitle + "_assets"); // init here due to title not being assigned till later on in execution.
+				
+				//var itemDisplay:OpenPlanPopup = new OpenPlanPopup();
+				xmlFile.ignoreWhitespace = true;
+				
+				//loop through all the files
+				for (var i:int=0; i < xmlFile.planItem.length(); i++) {
+					
+					var itemName:String = xmlFile.planItem[i].fileName;
+					var itemPath:Object = planAssetsDir.resolvePath(xmlFile.planItem[i].fileName);
+					
+					var item:PlanItem = new PlanItem(itemName, itemPath.nativePath); // create new item object
+					
+					itemInPlan.addItem(item); // put the new object into array.
+				}
+				
+				updatePlanListDisplay();
+			}
+			
+			/**
+			 * update item in plan,
+			 * set display white space between items.
+			 * 
+			 */
+			private function updatePlanListDisplay():void
+			{				
+				var itemYCoordCounter:int = 0;
+				
+				if(itemList.numElements >= 1) {
+					itemList.removeAllElements();
+				}
+				
+				for (var i:int = 0; i < itemInPlan.length; i++) 
+				{
+					var itemDisplay:OpenPlanItemDisplay = new OpenPlanItemDisplay(); // create new Display instance.
+					itemDisplay.fileName = itemInPlan[i].itemName;
+					itemDisplay.y = itemYCoordCounter;
+					
+					itemList.addElement(itemDisplay);
+					
+					itemDisplay.itemTitle.addEventListener(MouseEvent.CLICK, this.openFile);
+					
+					itemYCoordCounter += 30; // increase Y coords.
+				}
+			}
+			
+			/**
+			 * execute selected file
+			 * 
+			 * @param event MouseEvent
+			 */ 
+			public function openFile(event:MouseEvent):void
+			{
+				// declarations				
+				var currentTar:Object = event.currentTarget.document.fileName;
+				var fileResolveVar:File = planLibraryDir.resolvePath(classPlanTitle + "_assets/" + currentTar); // init here due to title not being assigned till later on in execution.
+				
+				fileResolveVar.openWithDefaultApplication(); //opens file with default system editor
+			}
+			
+			/**
+			 * execute all file in plan
+			 * 
+			 * @param event MouseEvent
+			 */ 
+			public function openAllFiles(event:MouseEvent):void
+			{
+				var iterateFile:File;
+				
+				// iterate through itemInPlan:Array, and open them all.
+				for each(var item:Object in itemInPlan)
+				{
+					iterateFile = planLibraryDir.resolvePath(classPlanTitle + "_assets/" + item.itemName); // init here due to title not being assigned till later on in execution.
+					iterateFile.openWithDefaultApplication();
+				}
+			}
+			
+			/**
+			 * close plan
+			 * 
+			 * @param event MouseEvent
+			 */ 
+			public function closePlan(event:MouseEvent):void
+			{
+				// close the plan and destroy popup
+				this.close();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Panel left="0" right="0" top="0" bottom="0" fontSize="14" title="{classPlanTitle}">
+		
+		<s:HGroup id="planButtonsContainer" left="5" right="5" bottom="5" height="60"
+				  columnWidth="150" gap="11" horizontalAlign="right" paddingBottom="12"
+				  paddingRight="20" variableColumnWidth="false" verticalAlign="bottom">
+			
+			<s:Button id="openAll" x="456" width="150" height="35"
+					  label="Open All Files" click="openAllFiles(event)"/>
+			<s:Button id="editPlan" x="456" width="150" height="35"
+					  label="Edit Plan" click="closePlan(event)"/>
+			<s:Button height="35" 
+					  label="Close Plan" click="closePlan(event)"/>
+			
+		</s:HGroup>
+		
+		
+		<s:Scroller top="0" left="10" right="10" bottom="65">
+			<s:VGroup id="itemList">
+				<!-- Plan items to be generated here. -->
+			</s:VGroup>
+		</s:Scroller>
+		
+	</s:Panel>
+	
+</s:SkinnablePopUpContainer>

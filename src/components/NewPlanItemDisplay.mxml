@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--- 
+	New plan item display file
+	displays all units in plan
+	along with remove and up,down button
+-->
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					  xmlns:s="library://ns.adobe.com/flex/spark"
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  width="100%" height="30" backgroundColor="#FFFFFF"
+					  backgroundColor.HoverState="#C0D9F0" rollOver="currentState='HoverState'" rollOut="currentState='State1'">
+	<s:states>
+		<s:State name="State1"/>
+		<s:State name="HoverState"/>
+	</s:states>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import spark.components.Button
+			
+			[Bindable]
+			/**
+			 * storing filename
+			 */ 
+			public var fileName:String;
+			
+			/**
+			 * declare position of item
+			 */ 
+			public var first:Boolean = false;
+			
+			/**
+			 * declare position of item
+			 */ 
+			public var last:Boolean = false;
+			
+			/**
+			 * create new Button variable for up button
+			 */ 
+			public var upButton:Button;
+			
+			/**
+			 * create new Button variable for down button
+			 */ 
+			public var downButton:Button;
+			
+			/**
+			 * Display up and down button
+			 * 
+			 */ 
+			public function sortCheck():void
+			{
+				if(first == false){
+					// display UP button
+					upButton = new Button;
+					upButton.label = "↑";
+					upButton.height = 20;
+					upButton.width = 30;
+					upButton.y = 0;
+					upButton.id = "upSortButton";
+					upButton.right = 120;
+					
+					buttonContainer.addElement(upButton);
+				}
+					
+				if(last == false){
+					// display DOWN button
+					downButton = new Button;
+					downButton.label = "↓";
+					downButton.height = 20;
+					downButton.width = 30;
+					downButton.y = 0;
+					downButton.id = "downSortButton";
+					downButton.right = 90;
+					
+					buttonContainer.addElement(downButton);
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:Label id="itemTitle" text="{fileName}" verticalCenter="0"/>
+	<s:Group id="buttonContainer" right="10" height="20" verticalCenter="0">
+		<s:Button id="removeButton" y="0" right="10" height="20" label="Remove"/>
+	</s:Group>
+	
+	
+</s:SkinnableContainer>

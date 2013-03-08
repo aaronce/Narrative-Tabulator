@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--- 
+	Open Plan list display file
+	opens up selected XML file
+	load it and pass it to OpenPlanPopup
+-->
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					  xmlns:s="library://ns.adobe.com/flex/spark"
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  width="100%" height="30" backgroundColor="#FFFFFF">
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import flash.net.URLLoader;
+			import flash.net.URLRequest;
+			import mx.managers.PopUpManager;
+			import spark.components.WindowedApplication;
+				
+			[Bindable]
+			/**
+			 * The file name
+			 */ 
+			public var fileName:String;
+			
+			/**
+			 * Init OpenPlanPopup class
+			 */ 
+			private var popPlan:OpenPlanPopup;
+			
+			/**
+			 * Plan library declarations
+			 */
+			private var userDocDir:File = File.documentsDirectory;
+			
+			/**
+			 * More specific plan declaration
+			 */
+			private var planLibraryDir:File = userDocDir.resolvePath("Tabulator Lesson Plans");
+			
+			/**
+			 * Stores xml object
+			 */
+			private var xml:XML;
+			
+			/**
+			 * Get name of selected XML file.
+			 * passes it to loadXML
+			 * 
+			 * @param event The Mouse event.
+			 * 
+			 * @see loadXML
+			 */
+			private function preOpenPlan(event:MouseEvent):void
+			{
+				var selectedXMLFile:String = fileName + ".xml";
+				loadXML(selectedXMLFile);
+			}
+			
+			/**
+			 * Load xml file using the URLLoader class,
+			 * call xmlLoaded function once the xml has loaded
+			 * 
+			 * @param xmlFile String.
+			 * 
+			 * @see xmlLoaded
+			 */
+			private function loadXML(xmlFile:String):void
+			{
+				var xmlPointer:File = planLibraryDir.resolvePath(xmlFile);
+				
+				// load xml file using the URLLoader class
+				var loader:URLLoader = new URLLoader(new URLRequest(xmlPointer.url));
+				// call xmlLoaded function once the xml has loaded
+				loader.addEventListener(Event.COMPLETE, xmlLoaded);
+			}
+			
+			/**
+			 * create new XML instance name:file. Put data of chosen xml file into it
+			 * parse the XML data into OpenPlanPopup
+			 * proceed to editPlan if button is clicked
+			 * 
+			 * @param evt The event.
+			 * 
+			 * @see editPlanInit
+			 */
+			private function xmlLoaded(e:Event):void
+			{
+				// create new XML instance name:file. Put data of chosen xml file into it
+				var file:XML = new XML(e.target.data);
+				
+				popPlan = new OpenPlanPopup;
+				popPlan.open(parentApplication.baseContainer, true);
+				popPlan.setTitle(fileName);
+				popPlan.showItem(file, fileName);
+				popPlan.width = parentApplication.baseContainer.width / 3 * 2;
+				popPlan.height = parentApplication.baseContainer.height / 3 * 2;
+				PopUpManager.centerPopUp(popPlan);
+				
+				popPlan.editPlan.addEventListener(MouseEvent.CLICK, this.editPlanInit);
+			}
+			
+			/**
+			 * create new class plan instance.
+			 * Initialising the edit of plan
+			 * 
+			 * @param event The MouseEvent.
+			 */ 
+			private function editPlanInit(event:MouseEvent):void
+			{
+				parentApplication.contentContainer.removeAllElements();
+				
+				// create new class plan instance.
+				var editExistingPlan:NewClassPlan = new NewClassPlan;
+				parentApplication.contentContainer.addElement(editExistingPlan);
+				editExistingPlan.setTitle(event.currentTarget.parentDocument.classPlanTitle);
+				editExistingPlan.setPlanItemList(event.currentTarget.parentDocument.itemInPlan);
+				editExistingPlan.updatePlanListDisplay();
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:Button id="fileTitle" x="0" y="0" width="100%" height="30" label="{fileName}" click="preOpenPlan(event)"
+			  cornerRadius="2"/>
+	
+</s:SkinnableContainer>

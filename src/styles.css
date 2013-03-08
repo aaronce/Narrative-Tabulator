@@ -13,4 +13,8 @@ s|SkinnableContainer
 	backgroundColor: #808080;
 	borderVisible: false;
 }
+global
+{
+	roll-over-color: #CEDBEF;
+}
 	

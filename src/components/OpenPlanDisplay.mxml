@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--- 
+	Open Plan file
+	Contains scan library and browse external plan
+	Retrive XML file and parse data to OpenPlanPopup class
+-->
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					  xmlns:s="library://ns.adobe.com/flex/spark"
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  width="100%" height="100%"
+					  creationComplete="scanPlanLibrary()">
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import components.NewPlanItemDisplay;
+			import components.OpenPlanListDisplay;
+			import components.OpenPlanPopup;
+			import components.PlanItem;
+			
+			import flash.events.Event;
+			import flash.filesystem.File;
+			import flash.filesystem.FileStream;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.WindowedApplication;
+			import spark.events.PopUpEvent;
+			
+			
+			[Bindable]
+			/**
+			 * Storing Plan title
+			 */ 
+			protected var planTitle:String; // var for storing Plan title
+			/**
+			 * Storing the CURRENT save status of the plan.
+			 */ 
+			protected var unsavedChanges:Boolean = false; // var for storing the CURRENT save status of the plan.
+			
+			/**
+			 * Storing chosen files for addition to plan.
+			 */ 
+			private var fileToOpen:File = new File;	 // var used for storing chosen files for addition to plan.
+			
+			/**
+			 * Plan library declarations
+			 */
+			private var userDocDir:File = File.documentsDirectory;
+			
+			/**
+			 * More specific plan declaration
+			 */
+			private var planLibraryDir:File = userDocDir.resolvePath("Tabulator Lesson Plans");
+			
+			/**
+			 * init OpenPlanPopup class
+			 */ 
+			private var popPlan:OpenPlanPopup; // for plan popup
+
+			
+			
+			/**
+			 *  this scans the plan directory for available plans,
+			 *	and adds them to the planList:Array.
+			 */
+			private function scanPlanLibrary():void 
+			{
+				var list:Array = planLibraryDir.getDirectoryListing();
+				var itemCounter:int = 0;
+
+				for (var i:uint = 0; i < list.length; i++) {
+					//creates new ClassPlanDisplay instance
+					var fileDisplay:OpenPlanListDisplay = new OpenPlanListDisplay();
+					//stores each file name in folder into name (string)
+					var name:String = list[i].name;		
+					
+					//filter for .xml files
+					if(name.indexOf(".xml") >= 0) {
+						//get rid of .xml in the file name	
+						var array:Array = list[i].name.split(".xml");
+						name = array[0];
+						//Display name of plan by parsing it into fileDisplay which is an instance of ClassPlanDisplay class
+						fileDisplay.fileName = name;
+						fileDisplay.y = itemCounter;
+						itemList.addElement(fileDisplay);
+						itemCounter += 30;
+					}
+				}
+			}
+			
+			
+			/**
+			 * This function browse for external plan.
+			 * Filter has been provided so only .xml extension can be select.
+			 * 
+			 * @param event The Mouse event.
+			 */
+			private function browseForExternalPlan(event:MouseEvent):void
+			{
+			
+				
+				try	{
+					fileToOpen.addEventListener(Event.SELECT, onFileSelected); 
+					fileToOpen.addEventListener(Event.CANCEL, onCancel);
+					var textTypeFilter:FileFilter = new FileFilter("XML Files (*.xml)", "*.xml;"); 
+					fileToOpen.browse([textTypeFilter]); 
+					
+				}
+				catch (error:Error) {
+					Alert.show("Failed:" + error.message);
+				}				
+			}	
+			
+			/**
+			 * This function loads in the xml file,
+			 * search the asset folder on nativepath of the xml file
+			 * and if there is an asset folder of it, then proceed.
+			 * 
+			 * @param e The event.
+			 */
+			private function onFileSelected(e:Event):void 
+			{  
+				fileToOpen.load();
+				var tempvar:File = new File;
+				tempvar = new File(fileToOpen.nativePath);
+				var tempvar2:File = new File;
+				var tempstr:String = fileToOpen.name;
+				var newstr:String = tempstr.split(".xml").join("");
+				tempvar2 = tempvar.parent.resolvePath(newstr + "_assets");
+				if(!tempvar2.exists){
+					Alert.show("Failed: Cannot find corresponding asset directory.");
+				}else{	
+				fileToOpen.addEventListener(Event.COMPLETE, onComplete); 
+				}
+			} 
+			
+			/**
+			 * Set the properties of OpenPlanPopup
+			 * parse the XML data into OpenPlanPopup
+			 * proceed to editPlan if button is clicked
+			 * 
+			 * @param evt The event.
+			 * 
+			 * @see editPlanInit
+			 */
+			private function onComplete(evt:Event):void 
+			{ 
+				var externalFile:XML = new XML(fileToOpen.data);
+				
+				popPlan = new OpenPlanPopup;
+				popPlan.open(parentApplication.baseContainer, true);
+				popPlan.setTitle(externalFile.@title);
+				popPlan.showItem(externalFile, externalFile.title);
+				popPlan.width = parentApplication.baseContainer.width / 3 * 2;
+				popPlan.height = parentApplication.baseContainer.height / 3 * 2;
+				PopUpManager.centerPopUp(popPlan);
+				
+				popPlan.editPlan.addEventListener(MouseEvent.CLICK, this.editPlanInit);
+				
+			}
+			
+			/**
+			 * closes OpenPlanPopup
+			 * create new class plan instance.
+			 * Initialising the edit of plan
+			 * 
+			 * @param event The MouseEvent
+			 */ 
+			private function editPlanInit(event:MouseEvent):void
+			{
+				// closes OpenPlanPopup
+				popPlan.closePlan(event);
+				
+				// create new class plan instance.
+				var editExistingPlan:NewClassPlan = new NewClassPlan;
+				parentApplication.baseContainer.contentContainer.addElement(editExistingPlan);
+				editExistingPlan.setTitle(event.currentTarget.classPlanTitle);
+				editExistingPlan.setPlanItemList(event.currentTarget.itemInPlan);
+				editExistingPlan.updatePlanListDisplay();
+			}
+			
+			/**
+			 * shows alert when cancel button is pressed.
+			 * 
+			 * @param evt The event
+			 */ 
+			
+			private function onCancel(evt:Event):void 
+			{ 
+				Alert.show("The open file request was canceled by user."); 
+			} 
+
+			/**
+			 * close the plan
+			 * 
+			 * @param event The mouse event
+			 */ 
+			private function closePlanlist(event:MouseEvent):void
+			{
+					this.removeAllElements();		
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:Panel id="planPanel" width="100%" height="100%" title="{planTitle}">
+		
+		<s:HGroup id="planButtonsContainer" left="5" right="5" bottom="5" height="80"
+				  columnWidth="150" gap="11" horizontalAlign="right" paddingBottom="20"
+				  paddingRight="20" variableColumnWidth="false" verticalAlign="bottom">
+			
+			<s:Button id="openExternalPlan" x="456" width="150" height="35"
+					  label="Open External Plan" click="browseForExternalPlan(event)"/>
+			<s:Button height="35" 
+					  label="Close Plan Library" click="closePlanlist(event)"/>
+		
+		</s:HGroup>
+		
+		<s:Scroller left="10" right="10" bottom="65" top="10">
+			<s:VGroup id="itemList">
+				<!-- Plan items to be generated here. -->
+			</s:VGroup>
+		</s:Scroller>
+		
+	</s:Panel>
+	
+</s:SkinnableContainer>

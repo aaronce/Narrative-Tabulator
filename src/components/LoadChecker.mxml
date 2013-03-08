@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--- 
+	Load checker file.
+	Check if file Tabulator Lesson Plans is created on user's computer
+	if not create one
+-->
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" width="350" height="250" 
+					  backgroundColor="#FFFFFF" creationComplete="timerActivate()">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import flash.filesystem.*;
+			import mx.controls.Alert;
+			import flash.utils.Timer;
+			import flash.events.TimerEvent;
+			import flash.events.Event;
+			
+			/**
+			 * Plan library declarations
+			 */
+			private var userDocDir:File = File.documentsDirectory;
+			
+			/**
+			 * More specific plan declaration
+			 */
+			private var planLibraryDir:File = userDocDir.resolvePath("Tabulator Lesson Plans");
+			
+			/**
+			 * set timer
+			 */
+			private var myTimer:Timer = new Timer(4000, 1);
+			
+			/**
+			 * Set time so it can process the checking of file 
+			 *
+			 */
+			private function timerActivate():void {
+				myTimer.addEventListener(TimerEvent.TIMER_COMPLETE, planLibraryFileCheck);
+				myTimer.start();
+			}
+			
+			/**
+			 * check to see if plan directory exists on filesystem.
+			 * if it does not exist it tries to create it, otherwise alerts user to error.
+			 * closes popup when complete.
+			 *
+			 */
+			private function planLibraryFileCheck(event:TimerEvent):void {
+				
+				if (planLibraryDir.exists == false) {
+					
+					try {
+						var toBeCreated:File = planLibraryDir;
+						toBeCreated.createDirectory();
+					}
+					catch(error:Error) {	
+						Alert.show("Unable to create Tabulator Lesson Plans directory, try manually adding this.");	
+					}
+					
+				}
+			
+				close(false);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Group x="0" y="0" width="100%" height="100%">
+		
+		<s:Image x="85" y="36" source="assets/NarrativeTabulator.jpg"/>
+		<s:SWFLoader x="153" y="162" source="assets/loading.swf"/>
+		<s:Label x="152" y="212" text="Loading.."/>
+		
+	</s:Group>
+	
+</s:SkinnablePopUpContainer>

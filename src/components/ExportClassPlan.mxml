@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--- 
+	Export class plan file
+	display asset folders
+	export selected asset folder
+-->
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					  xmlns:s="library://ns.adobe.com/flex/spark"
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  width="100%" height="100%"
+					  creationComplete="scanPlanLibrary()">
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import components.ExportPlanListDisplay;
+			import flash.events.Event;
+			import flash.events.FileListEvent;
+			import flash.filesystem.*;
+			import flash.utils.ByteArray;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.managers.PopUpManager;
+			import nochump.util.zip.*;
+			import spark.components.WindowedApplication;
+			import spark.events.PopUpEvent;
+			
+			/**
+			 * Storing the CURRENT save status of the plan.
+			 */ 
+			protected var unsavedChanges:Boolean = false; // var for storing the CURRENT save status of the plan.
+			
+			/**
+			 * Storing chosen files for addition to plan.
+			 */
+			private var fileToOpen:File = new File;
+			
+			/**
+			 * Plan library declarations
+			 */
+			private var userDocDir:File = File.documentsDirectory;
+			
+			/**
+			 * More specific plan declaration
+			 */
+			private var planLibraryDir:File = userDocDir.resolvePath("Tabulator Lesson Plans");
+			
+			/**
+			 * array for storing directory names
+			 */
+			private var directory:Array;
+			
+			/**
+			 * File instance for zip input.
+			 */
+			private var zipInput:File = new File();
+			
+			/**
+			 * File instance for zip output.
+			 */
+			private var zipOutput:File = new File();
+			
+			/**
+			 * The actual zip files will later be store in here.
+			 */
+			private var zipFile:ZipOutput;				
+			
+			/**
+			 * Temporary file instance which will later be use for retrieving file path.
+			 */
+			private var temp:File;
+			
+			/**
+			 * Array of files
+			 */
+			private var files:Array = new Array();
+
+			
+			/**
+			 *  this scans the asset directory for available asset,
+			 *	then pass the asset title when user select
+			 * 
+			 * @see getDirectory
+			 */
+			private function scanPlanLibrary():void 
+			{
+				var list:Array = planLibraryDir.getDirectoryListing();
+				var assetFiles:Array = new Array;
+				var nameOfAsset:Array = new Array;
+				var itemCounter:int = 0;
+				
+				for (var i:uint = 0; i < list.length; i++) {
+					//stores each file name in folder into name (string)
+					var name:String = list[i].name;
+					var arrayOfAsset:Array;
+					var arrayOfAssetName:Array;
+					var fileDisplay:ExportPlanListDisplay = new ExportPlanListDisplay();
+					
+					
+					if(name.indexOf("_assets") >= 0){
+						var fileAssets:String;
+						
+						//store directory with _assets into array
+						assetFiles.push(list[i].name);
+						arrayOfAsset = list[i].name.split("_assets");
+						
+						fileAssets = arrayOfAsset[0];
+						
+						fileDisplay.fileName = fileAssets;
+						fileDisplay.y = itemCounter;
+						itemList.addElement(fileDisplay);
+						fileDisplay.fileTitle.addEventListener(MouseEvent.CLICK, this.getDirectory);
+						
+						itemCounter += 30;
+					}	
+				}
+			}
+			
+			/**
+			 *  Gets directory path and pass it to getFilesFromDirectory
+			 * 
+			 * @param event MouseEvent
+			 * 
+			 * @see getFilesFromDirectory
+			 */
+			public function getDirectory(event:MouseEvent):void
+			{
+				var dir:File = planLibraryDir.resolvePath(event.currentTarget.document.fileName + "_assets");
+				temp = new File(dir.nativePath);
+				getFilesFromDirectory(dir);
+			}
+			
+			/**
+			 *  Gets all the file and store them inside an array
+			 * 
+			 * @param directory File
+			 * 
+			 * @see createZIP
+			 */
+			private function getFilesFromDirectory(directory:File):void
+			{
+				var fileList:Array = directory.getDirectoryListing();
+				for(var i:uint = 0;i<fileList.length;i++)
+				{
+					var stream:FileStream = new FileStream();
+					var f:File = fileList[i] as File;
+					var path:String = temp.getRelativePath(f);
+					if(f.isDirectory)
+					{
+						getFilesFromDirectory(f);
+						continue;
+					}
+					stream.open(f,FileMode.READ);
+					var fileData:ByteArray = new ByteArray();
+					stream.readBytes(fileData);
+					var file:Object = new Object();
+					if(path)
+						file.name = path;
+					else
+						file.name = f.name;
+					trace(file.name);
+					file.data = fileData;
+					files.push(file);
+				}
+				createZIP();
+			}
+			
+			/**
+			 *  Create a zip file with all the files inside asset
+			 *  able user to select their own destination for zip file
+			 * 
+			 * @see onSave
+			 */
+			private function createZIP():void
+			{
+				zipFile = new ZipOutput();
+				for(var i:uint = 0; i<files.length; i++)
+				{
+					var zipEntry:ZipEntry = new ZipEntry(files[i].name);
+					zipFile.putNextEntry(zipEntry);
+					zipFile.write(files[i].data);
+					zipFile.closeEntry();
+					trace(zipFile);
+				}
+				zipFile.finish();
+				
+				
+				zipOutput.browseForSave("Select target directory");
+				zipOutput.addEventListener(Event.SELECT, onSave);
+			}
+			
+			/**
+			 *  Save file according to the path passes through from createZIP
+			 * 
+			 * @param event Event
+			 */
+			private function onSave(e:Event):void
+			{
+				var archiveFile:File = e.target as File;
+				archiveFile.nativePath += ".zip";
+				
+				if(!archiveFile.exists)
+				{
+					var stream:FileStream = new FileStream();
+					stream.open(archiveFile,FileMode.WRITE);
+					stream.writeBytes(zipFile.byteArray);
+					stream.close();
+				}
+				Alert.show("File has been exported to chosen destination");
+			}
+			
+			/**
+			 *  Close plan list
+			 * 
+			 * @param event MouseEvent
+			 */
+			private function closePlanlist(event:MouseEvent):void
+			{
+				this.removeAllElements();		
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Panel id="planPanel" width="100%" height="100%" title="Plan Exporter">
+		
+		<s:HGroup id="planButtonsContainer" left="5" right="5" bottom="5" height="60"
+				  columnWidth="150" gap="11" horizontalAlign="right" paddingBottom="12"
+				  paddingRight="20" variableColumnWidth="false" verticalAlign="bottom">
+
+			<s:Button height="35" 
+					  label="Close Plan Exporter" click="closePlanlist(event)"/>
+		
+		</s:HGroup>
+		
+		<s:Scroller left="10" right="10" bottom="65" top="10">
+			<s:VGroup id="itemList">
+				<!-- Plan items to be generated here. -->
+			</s:VGroup>
+		</s:Scroller>
+		
+	</s:Panel>
+	
+</s:SkinnableContainer>
